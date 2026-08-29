@@ -1,7 +1,13 @@
 #include "Card.h"
 
 Card::Card(CardColor color, CardType type, int number)
-    : color(color), type(type), number(number) {}
+    : color(color), type(type), number(number) {
+    if (isNumber() && (number < 0 || number > 9)) {
+        throw CardException("Invalid card number: " + std::to_string(number));
+    }
+}
+
+Card::~Card() {}
 
 CardColor Card::getColor() const {
     return color;
@@ -35,7 +41,6 @@ bool Card::canPlayOn(const Card& topCard) const {
     }
     
     // Se la carta in cima è Wild, puoi giocare qualsiasi carta dello stesso colore
-    // (il colore della carta Wild è stato scelto dal giocatore precedente)
     if (topCard.isWild()) {
         return this->color == topCard.color;
     }

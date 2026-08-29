@@ -2,12 +2,11 @@
 #define AI_H
 
 #include "Player.h"
-#include <memory>
 
 enum class AIStrategy {
-    RANDOM,      // Gioca carte a caso
-    AGGRESSIVE,  // Preferisce carte speciali
-    SMART        // Strategia avanzata
+    RANDOM,
+    AGGRESSIVE,
+    SMART
 };
 
 class AI : public Player {
@@ -26,10 +25,11 @@ private:
 
 public:
     AI(const std::string& name, int id, AIStrategy strategy = AIStrategy::RANDOM);
+    virtual ~AI();
     
-    // Decisione di gioco
-    int chooseCard(const Card& topCard);
-    CardColor chooseWildColor() const;
+    // Override metodi virtuali
+    int chooseCard(const Card& topCard) override;
+    CardColor chooseWildColor() const override;
     
     // Getters
     AIStrategy getStrategy() const;

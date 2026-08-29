@@ -4,6 +4,7 @@
 #include <random>
 #include <ctime>
 #include <limits>
+#include <cstdlib>
 
 #ifdef _WIN32
     #define CLEAR_SCREEN "cls"
@@ -15,27 +16,37 @@ int Utils::getIntInput(int min, int max) {
     int input;
     
     while (true) {
-        std::cin >> input;
-        
-        if (std::cin.fail()) {
+        try {
+            std::cin >> input;
+            
+            if (std::cin.fail()) {
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Invalid input. Please enter a number between " << min << " and " << max << ": ";
+                continue;
+            }
+            
+            if (input >= min && input <= max) {
+                return input;
+            }
+            
+            std::cout << "Input out of range. Please enter a number between " << min << " and " << max << ": ";
+        } catch (const std::exception& e) {
+            std::cerr << "Error getting input: " << e.what() << std::endl;
             std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << "Invalid input. Please enter a number between " << min << " and " << max << ": ";
-            continue;
         }
-        
-        if (input >= min && input <= max) {
-            return input;
-        }
-        
-        std::cout << "Input out of range. Please enter a number between " << min << " and " << max << ": ";
     }
 }
 
 std::string Utils::getStringInput() {
     std::string input;
-    std::getline(std::cin, input);
-    return input;
+    try {
+        std::getline(std::cin, input);
+        return input;
+    } catch (const std::exception& e) {
+        std::cerr << "Error getting string input: " << e.what() << std::endl;
+        return "";
+    }
 }
 
 void Utils::clearScreen() {
@@ -80,32 +91,56 @@ std::string Utils::typeToString(CardType type) {
 }
 
 CardColor Utils::stringToColor(const std::string& str) {
-    if (str == "RED") return CardColor::RED;
-    if (str == "YELLOW") return CardColor::YELLOW;
-    if (str == "GREEN") return CardColor::GREEN;
-    if (str == "BLUE") return CardColor::BLUE;
-    return CardColor::RED;  // Default
+    try {
+        if (str == "RED") return CardColor::RED;
+        if (str == "YELLOW") return CardColor::YELLOW;
+        if (str == "GREEN") return CardColor::GREEN;
+        if (str == "BLUE") return CardColor::BLUE;
+        return CardColor::RED;  // Default
+    } catch (const std::exception& e) {
+        std::cerr << "Error converting string to color: " << e.what() << std::endl;
+        return CardColor::RED;
+    }
 }
 
 bool Utils::fileExists(const std::string& filename) {
-    std::ifstream file(filename);
-    return file.good();
+    try {
+        std::ifstream file(filename);
+        return file.good();
+    } catch (const std::exception& e) {
+        std::cerr << "Error checking if file exists: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool Utils::deleteFile(const std::string& filename) {
-    return std::remove(filename.c_str()) == 0;
+    try {
+        return std::remove(filename.c_str()) == 0;
+    } catch (const std::exception& e) {
+        std::cerr << "Error deleting file: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 int Utils::getRandomInt(int min, int max) {
-    static std::mt19937 gen(static_cast<unsigned>(std::time(nullptr)));
-    std::uniform_int_distribution<> dis(min, max);
-    return dis(gen);
+    try {
+        static std::mt19937 gen(static_cast<unsigned>(std::time(nullptr)));
+        std::uniform_int_distribution<> dis(min, max);
+        return dis(gen);
+    } catch (const std::exception& e) {
+        std::cerr << "Error generating random int: " << e.what() << std::endl;
+        return min;
+    }
 }
 
-bool Utils::isValidCardPlay(const std::shared_ptr<Card>& playedCard, 
-                            const std::shared_ptr<Card>& topCard) {
-    if (!playedCard || !topCard) {
+bool Utils::isValidCardPlay(const Card* playedCard, const Card* topCard) {
+    try {
+        if (!playedCard || !topCard) {
+            return false;
+        }
+        return playedCard->canPlayOn(*topCard);
+    } catch (const std::exception& e) {
+        std::cerr << "Error validating card play: " << e.what() << std::endl;
         return false;
     }
-    return playedCard->canPlayOn(*topCard);
 }

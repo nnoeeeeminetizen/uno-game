@@ -2,7 +2,6 @@
 #define UTILS_H
 
 #include <string>
-#include <vector>
 #include "Card.h"
 
 namespace Utils {
@@ -25,8 +24,7 @@ namespace Utils {
     int getRandomInt(int min, int max);
     
     // Validazione
-    bool isValidCardPlay(const std::shared_ptr<Card>& playedCard, 
-                        const std::shared_ptr<Card>& topCard);
+    bool isValidCardPlay(const Card* playedCard, const Card* topCard);
 }
 
 #endif // UTILS_H

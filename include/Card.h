@@ -3,13 +3,14 @@
 
 #include <string>
 #include <iostream>
+#include <stdexcept>
 
 enum class CardColor {
     RED,
     YELLOW,
     GREEN,
     BLUE,
-    WILD  // Per carte Wild
+    WILD
 };
 
 enum class CardType {
@@ -22,14 +23,21 @@ enum class CardType {
     WILD_DRAW_FOUR
 };
 
+// Exception personalizzate
+class CardException : public std::runtime_error {
+public:
+    explicit CardException(const std::string& message) : std::runtime_error(message) {}
+};
+
 class Card {
 private:
     CardColor color;
     CardType type;
-    int number;  // Per carte numero
+    int number;
 
 public:
     Card(CardColor color, CardType type, int number = -1);
+    ~Card();
     
     // Getters
     CardColor getColor() const;
@@ -42,7 +50,7 @@ public:
     bool isSpecial() const;
     bool isNumber() const;
     
-    // Validazione: controlla se questa carta può essere giocata su un'altra
+    // Validazione: controlla se questa carta puo' essere giocata su un'altra
     bool canPlayOn(const Card& topCard) const;
 };
 

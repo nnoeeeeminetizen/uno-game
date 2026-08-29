@@ -2,25 +2,36 @@
 #define PLAYER_H
 
 #include "Card.h"
-#include <vector>
 #include <string>
-#include <memory>
+#include <stdexcept>
+
+// Exception per il giocatore
+class PlayerException : public std::runtime_error {
+public:
+    explicit PlayerException(const std::string& message) : std::runtime_error(message) {}
+};
 
 class Player {
 private:
     std::string name;
-    std::vector<std::shared_ptr<Card>> hand;
+    Card** hand;               // Array dinamico di puntatori a carte
+    int handSize;
+    int handCapacity;
     int gamesWon;
     int gamesLost;
     bool isAI;
-    int playerID;  // 0 = umano, 1-3 = IA
+    int playerID;
+    
+    // Utility
+    void resizeHand();
 
 public:
     Player(const std::string& name, int id, bool isAI = false);
+    virtual ~Player();
     
     // Gestione mano
-    void addCard(std::shared_ptr<Card> card);
-    std::shared_ptr<Card> playCard(int cardIndex);
+    void addCard(Card* card);
+    Card* playCard(int cardIndex);
     void removeCard(int cardIndex);
     bool hasCards() const;
     int getHandSize() const;
@@ -29,7 +40,7 @@ public:
     std::string getName() const;
     int getPlayerID() const;
     bool getIsAI() const;
-    std::vector<std::shared_ptr<Card>> getHand() const;
+    Card** getHand() const;
     int getGamesWon() const;
     int getGamesLost() const;
     
@@ -40,7 +51,11 @@ public:
     
     // Validazione
     bool canPlayCard(const Card& topCard);
-    std::vector<int> getValidCardIndices(const Card& topCard);
+    int* getValidCardIndices(const Card& topCard, int& count);
+    
+    // Virtual per polimorfismo
+    virtual int chooseCard(const Card& topCard);
+    virtual CardColor chooseWildColor() const;
     
     // Debug
     void printHand() const;

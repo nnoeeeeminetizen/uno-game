@@ -4,17 +4,22 @@
 #include "Player.h"
 #include "Deck.h"
 #include "AI.h"
-#include <vector>
-#include <memory>
-#include <string>
+#include <stdexcept>
+
+// Exception per il gioco
+class GameException : public std::runtime_error {
+public:
+    explicit GameException(const std::string& message) : std::runtime_error(message) {}
+};
 
 class Game {
 private:
-    std::vector<std::shared_ptr<Player>> players;
-    std::shared_ptr<Deck> deck;
+    Player** players;          // Array dinamico di puntatori a giocatori
+    int playersCount;
+    Deck* deck;                // Puntatore al mazzo
     int currentPlayerIndex;
     bool gameActive;
-    bool reverseDirection;  // True = senso orario inverso
+    bool reverseDirection;
     std::string savedGamePath;
     
     // Gestione turni
@@ -26,8 +31,8 @@ private:
     void handleSkip();
     void handleReverse();
     void handleDrawTwo();
-    void handleWild(std::shared_ptr<Player> player);
-    void handleWildDrawFour(std::shared_ptr<Player> player);
+    void handleWild(Player* player);
+    void handleWildDrawFour(Player* player);
     
     // Utility
     void displayGameState() const;
@@ -53,7 +58,7 @@ public:
     
     // Controllo stato
     bool isGameActive() const;
-    std::shared_ptr<Player> getWinner() const;
+    Player* getWinner() const;
     
     // Persistenza
     bool saveGame(const std::string& filename);

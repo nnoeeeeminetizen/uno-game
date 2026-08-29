@@ -2,80 +2,118 @@
 #include "Utils.h"
 #include <algorithm>
 #include <map>
+#include <iostream>
 
 AI::AI(const std::string& name, int id, AIStrategy strategy)
     : Player(name, id, true), strategy(strategy) {}
 
+AI::~AI() {}
+
 int AI::selectCardRandom(const Card& topCard) {
-    auto validIndices = getValidCardIndices(topCard);
-    
-    if (validIndices.empty()) {
-        return -1;  // No valid card
+    try {
+        int validCount = 0;
+        int* validIndices = getValidCardIndices(topCard, validCount);
+        
+        if (validCount == 0) {
+            delete[] validIndices;
+            return -1;
+        }
+        
+        int randomIdx = Utils::getRandomInt(0, validCount - 1);
+        int result = validIndices[randomIdx];
+        delete[] validIndices;
+        
+        return result;
+    } catch (const std::exception& e) {
+        throw PlayerException("Error in selectCardRandom: " + std::string(e.what()));
     }
-    
-    int randomIndex = Utils::getRandomInt(0, validIndices.size() - 1);
-    return validIndices[randomIndex];
 }
 
 int AI::selectCardAggressive(const Card& topCard) {
-    auto validIndices = getValidCardIndices(topCard);
-    
-    if (validIndices.empty()) {
-        return -1;
-    }
-    
-    // Preferisci carte speciali
-    for (int idx : validIndices) {
-        if (getHand()[idx]->isSpecial()) {
-            return idx;
+    try {
+        int validCount = 0;
+        int* validIndices = getValidCardIndices(topCard, validCount);
+        
+        if (validCount == 0) {
+            delete[] validIndices;
+            return -1;
         }
-    }
-    
-    // Se non ci sono carte speciali, gioca una carta a caso
-    int randomIndex = Utils::getRandomInt(0, validIndices.size() - 1);
-    return validIndices[randomIndex];
-}
-
-int AI::selectCardSmart(const Card& topCard) {
-    auto validIndices = getValidCardIndices(topCard);
-    
-    if (validIndices.empty()) {
-        return -1;
-    }
-    
-    // Priorità 1: Gioca carte che riducono la mano
-    if (getHandSize() > 5) {
-        // Se hai tante carte, preferisci le speciali
-        for (int idx : validIndices) {
+        
+        // Preferisci carte speciali
+        for (int i = 0; i < validCount; i++) {
+            int idx = validIndices[i];
             if (getHand()[idx]->isSpecial()) {
+                delete[] validIndices;
                 return idx;
             }
         }
+        
+        // Se non ci sono carte speciali, gioca una carta a caso
+        int randomIdx = Utils::getRandomInt(0, validCount - 1);
+        int result = validIndices[randomIdx];
+        delete[] validIndices;
+        
+        return result;
+    } catch (const std::exception& e) {
+        throw PlayerException("Error in selectCardAggressive: " + std::string(e.what()));
     }
-    
-    // Priorità 2: Mantieni la diversità di colori
-    CardColor topColor = topCard.getColor();
-    std::vector<int> sameColor;
-    
-    for (int idx : validIndices) {
-        if (getHand()[idx]->getColor() == topColor) {
-            sameColor.push_back(idx);
+}
+
+int AI::selectCardSmart(const Card& topCard) {
+    try {
+        int validCount = 0;
+        int* validIndices = getValidCardIndices(topCard, validCount);
+        
+        if (validCount == 0) {
+            delete[] validIndices;
+            return -1;
         }
+        
+        // Priorità 1: Se hai tante carte, preferisci le speciali
+        if (getHandSize() > 5) {
+            for (int i = 0; i < validCount; i++) {
+                int idx = validIndices[i];
+                if (getHand()[idx]->isSpecial()) {
+                    delete[] validIndices;
+                    return idx;
+                }
+            }
+        }
+        
+        // Priorità 2: Mantieni la diversità di colori
+        CardColor topColor = topCard.getColor();
+        int* sameColorIndices = new int[validCount];
+        int sameColorCount = 0;
+        
+        for (int i = 0; i < validCount; i++) {
+            int idx = validIndices[i];
+            if (getHand()[idx]->getColor() == topColor) {
+                sameColorIndices[sameColorCount++] = idx;
+            }
+        }
+        
+        int result;
+        if (sameColorCount > 0) {
+            int randomIdx = Utils::getRandomInt(0, sameColorCount - 1);
+            result = sameColorIndices[randomIdx];
+        } else {
+            // Fallback: gioca una carta a caso
+            int randomIdx = Utils::getRandomInt(0, validCount - 1);
+            result = validIndices[randomIdx];
+        }
+        
+        delete[] validIndices;
+        delete[] sameColorIndices;
+        
+        return result;
+    } catch (const std::exception& e) {
+        throw PlayerException("Error in selectCardSmart: " + std::string(e.what()));
     }
-    
-    if (!sameColor.empty()) {
-        int randomIndex = Utils::getRandomInt(0, sameColor.size() - 1);
-        return sameColor[randomIndex];
-    }
-    
-    // Fallback: gioca una carta a caso
-    int randomIndex = Utils::getRandomInt(0, validIndices.size() - 1);
-    return validIndices[randomIndex];
 }
 
 bool AI::hasWildCard() const {
-    for (const auto& card : getHand()) {
-        if (card->isWild()) {
+    for (int i = 0; i < getHandSize(); i++) {
+        if (getHand()[i] != nullptr && getHand()[i]->isWild()) {
             return true;
         }
     }
@@ -83,8 +121,8 @@ bool AI::hasWildCard() const {
 }
 
 bool AI::hasSpecialCard() const {
-    for (const auto& card : getHand()) {
-        if (card->isSpecial()) {
+    for (int i = 0; i < getHandSize(); i++) {
+        if (getHand()[i] != nullptr && getHand()[i]->isSpecial()) {
             return true;
         }
     }
@@ -94,9 +132,9 @@ bool AI::hasSpecialCard() const {
 CardColor AI::getMostFrequentColor() const {
     std::map<CardColor, int> colorCount;
     
-    for (const auto& card : getHand()) {
-        if (!card->isWild()) {
-            colorCount[card->getColor()]++;
+    for (int i = 0; i < getHandSize(); i++) {
+        if (getHand()[i] != nullptr && !getHand()[i]->isWild()) {
+            colorCount[getHand()[i]->getColor()]++;
         }
     }
     
@@ -114,20 +152,24 @@ CardColor AI::getMostFrequentColor() const {
 }
 
 int AI::chooseCard(const Card& topCard) {
-    switch (strategy) {
-        case AIStrategy::RANDOM:
-            return selectCardRandom(topCard);
-        case AIStrategy::AGGRESSIVE:
-            return selectCardAggressive(topCard);
-        case AIStrategy::SMART:
-            return selectCardSmart(topCard);
-        default:
-            return selectCardRandom(topCard);
+    try {
+        switch (strategy) {
+            case AIStrategy::RANDOM:
+                return selectCardRandom(topCard);
+            case AIStrategy::AGGRESSIVE:
+                return selectCardAggressive(topCard);
+            case AIStrategy::SMART:
+                return selectCardSmart(topCard);
+            default:
+                return selectCardRandom(topCard);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error in AI::chooseCard: " << e.what() << std::endl;
+        return -1;
     }
 }
 
 CardColor AI::chooseWildColor() const {
-    // L'IA sceglie il colore più frequente in mano
     return getMostFrequentColor();
 }
 
